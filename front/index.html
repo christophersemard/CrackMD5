@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>MD5 Distributed | Crack UI</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Inter", sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+      color: #38bdf8;
+      text-shadow: 0px 0px 10px #38bdf8;
+    }
+
+    .container {
+      width: 450px;
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      margin-bottom: 15px;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-size: 1rem;
+      border: 2px solid #334155;
+      transition: 0.2s;
+    }
+
+    input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      color: #0f172a;
+      background: #38bdf8;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #0ea5e9;
+    }
+
+    .card {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+      border: 1px solid #334155;
+    }
+
+    #status {
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    .progress-container {
+      width: 100%;
+      background: #334155;
+      border-radius: 8px;
+      margin-top: 15px;
+      overflow: hidden;
+      height: 12px;
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background: #38bdf8;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px #38bdf8;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>MD5 Distributed</h1>
+
+    <input id="hash" placeholder="Votre hash MD5..." value="e10adc3949ba59abbe56e057f20f883e" />
+
+    <button onclick="start()">🚀 Lancer le cracking</button>
+
+    <div class="progress-container">
+      <div class="progress-bar" id="progress"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px 0; color:#38bdf8;">📊 Statut</h3>
+      <pre id="status">En attente...</pre>
+    </div>
+  </div>
+
+  <script>
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&é\"'(-è_çà)=~#{[|`\\^@]}$ù*,;:!?./%µ<>+";
+
+    async function start() {
+      const hash = document.getElementById("hash").value;
+
+      if (!hash || hash.length !== 32) {
+        alert("Veuillez entrer un hash MD5 valide (32 caractères).");
+        return;
+      }
+
+      await fetch("http://localhost:3000/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hash,
+          charset,
+          maxLength: 3 // DEMO SAFE
+        })
+      });
+
+      poll();
+    }
+
+    async function poll() {
+      const res = await fetch("http://localhost:3000/status");
+      const data = await res.json();
+
+      document.getElementById("status").textContent = JSON.stringify(data, null, 2);
+
+      if (data.progress !== undefined) {
+        document.getElementById("progress").style.width = data.progress + "%";
+      }
+
+      setTimeout(poll, 1000);
+    }
+  </script>
+
+</body>
+
+</html>
