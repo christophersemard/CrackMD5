@@ -108,7 +108,9 @@
 
     <input id="hash" placeholder="Votre hash MD5..." value="e10adc3949ba59abbe56e057f20f883e" />
 
-    <button onclick="start()">🚀 Lancer le cracking</button>
+    <input id="maxLength" type="number" min="1" max="6" value="3" placeholder="Longueur maximum (ex: 3)" />
+
+    <button id="start-btn" onclick="start()">🚀 Lancer le cracking</button>
 
     <div class="progress-container">
       <div class="progress-bar" id="progress"></div>
@@ -122,39 +124,86 @@
 
   <script>
     const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&é\"'(-è_çà)=~#{[|`\\^@]}$ù*,;:!?./%µ<>+";
+    const statusEl = document.getElementById("status");
+    const progressEl = document.getElementById("progress");
+    const startBtn = document.getElementById("start-btn");
+
+    function renderStatus(data) {
+      if (!data || data.status === "no-session") {
+        return "Aucune session en cours.";
+      }
+
+      const lines = [
+        `Session #${data.id} (${data.status})`,
+        `Progression: ${data.progress ?? 0}%`,
+        `Chunks terminés: ${data.done || 0}/${data.totalChunks || 0}`,
+        `Hash: ${data.hash}`
+      ];
+
+      if (data.result) {
+        lines.push(`\nRésultat: ${data.result}`);
+      }
+
+      return lines.join("\n");
+    }
 
     async function start() {
       const hash = document.getElementById("hash").value;
+      const maxLengthInput = parseInt(document.getElementById("maxLength").value, 10);
 
       if (!hash || hash.length !== 32) {
         alert("Veuillez entrer un hash MD5 valide (32 caractères).");
         return;
       }
 
+      if (!Number.isInteger(maxLengthInput) || maxLengthInput <= 0) {
+        alert("Veuillez renseigner une longueur maximale valide.");
+        return;
+      }
+
+      startBtn.disabled = true;
+      startBtn.textContent = "⏳ Cracking en cours...";
+
       await fetch("http://localhost:3000/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          hash,
-          charset,
-          maxLength: 3 // DEMO SAFE
-        })
+        body: JSON.stringify({ hash, charset, maxLength: maxLengthInput })
       });
 
       poll();
     }
 
     async function poll() {
-      const res = await fetch("http://localhost:3000/status");
-      const data = await res.json();
+      try {
+        const res = await fetch("http://localhost:3000/status");
+        const data = await res.json();
 
-      document.getElementById("status").textContent = JSON.stringify(data, null, 2);
+        statusEl.textContent = renderStatus(data);
 
-      if (data.progress !== undefined) {
-        document.getElementById("progress").style.width = data.progress + "%";
+        if (data.progress !== undefined) {
+          progressEl.style.width = data.progress + "%";
+        }
+
+        if (data.status === "done") {
+          startBtn.disabled = false;
+          startBtn.textContent = "🚀 Relancer";
+          return;
+        }
+
+        if (data.status === "no-session") {
+          startBtn.disabled = false;
+          startBtn.textContent = "🚀 Lancer le cracking";
+          progressEl.style.width = "0%";
+          return;
+        }
+
+        setTimeout(poll, 1000);
+      } catch (err) {
+        statusEl.textContent = "Erreur lors de la récupération du statut: " + err.message;
+        startBtn.disabled = false;
+        startBtn.textContent = "🚀 Lancer le cracking";
+        progressEl.style.width = "0%";
       }
-
-      setTimeout(poll, 1000);
     }
   </script>
 
