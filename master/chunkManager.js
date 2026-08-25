@@ -27,6 +27,8 @@ function computeTotalCombinations(charset, maxLength) {
     return total;
 }
 
+exports.computeTotalCombinations = computeTotalCombinations;
+
 async function generateChunks(sessionId, charset, maxLength) {
     const chunkSize = 50000;
     const total = computeTotalCombinations(charset, maxLength);
@@ -45,19 +47,12 @@ async function generateChunks(sessionId, charset, maxLength) {
     log(C.gray, " └─", `INSERT en cours...`);
 
     const startTime = Date.now();
-    const queries = [];
-
-    for (let i = 0; i < total; i += chunkSize) {
-        queries.push(
-            pool.query(
-                `INSERT INTO chunks (sessionId, start, "end", status)
-             VALUES ($1, $2, $3, 'pending')`,
-                [sessionId, i, Math.min(i + chunkSize - 1, total - 1)]
-            )
-        );
-    }
-
-    await Promise.all(queries);
+    await pool.query(
+        `INSERT INTO chunks (sessionId, start, "end", status)
+         SELECT $1, block_start, LEAST(block_start + $2 - 1, $3 - 1), 'pending'
+         FROM generate_series(0, $3 - 1, $2) AS block_start`,
+        [sessionId, chunkSize, total]
+    );
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     log(

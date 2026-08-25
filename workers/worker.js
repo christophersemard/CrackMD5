@@ -1,5 +1,6 @@
 const axios = require("axios");
 const crypto = require("crypto");
+const indexToString = require("./indexer");
 
 // COLORS
 const C = {
@@ -15,21 +16,10 @@ const C = {
 };
 
 const workerId = "W" + Math.floor(Math.random() * 10000);
+const masterUrl = process.env.MASTER_URL || "http://localhost:3000";
 
 function log(c, p, m) {
     console.log(`${c}${p}${C.reset} ${m}`);
-}
-
-function indexToString(index, charset) {
-    const base = charset.length;
-    let s = "";
-
-    while (index >= 0) {
-        s = charset[index % base] + s;
-        index = Math.floor(index / base) - 1;
-        if (index < 0) break;
-    }
-    return s;
 }
 
 async function processChunk(data) {
@@ -45,7 +35,7 @@ async function processChunk(data) {
         if (hash === target) {
             log(C.green, `[${workerId}]`, `🔥 MATCH trouvé : "${text}"`);
 
-            await axios.post("http://localhost:3000/report", {
+            await axios.post(`${masterUrl}/report`, {
                 chunkId: data.chunkId,
                 found: true,
                 value: text,
@@ -55,7 +45,7 @@ async function processChunk(data) {
         }
     }
 
-    await axios.post("http://localhost:3000/report", {
+    await axios.post(`${masterUrl}/report`, {
         chunkId: data.chunkId,
         found: false,
     });
@@ -66,7 +56,7 @@ async function processChunk(data) {
 async function loop() {
     try {
         const res = await axios.get(
-            "http://localhost:3000/next-chunk?workerId=" + workerId
+            `${masterUrl}/next-chunk?workerId=${encodeURIComponent(workerId)}`
         );
 
         const data = res.data;
@@ -85,5 +75,7 @@ async function loop() {
     }
 }
 
-log(C.green, `[${workerId}]`, "🚀 Worker lancé !");
-loop();
+if (require.main === module) {
+    log(C.green, `[${workerId}]`, "🚀 Worker lancé !");
+    loop();
+}

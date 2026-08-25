@@ -1,0 +1,12 @@
+{
+  "name": "distributed-md5-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Laboratoire pédagogique de calcul distribué avec Node.js et PostgreSQL.",
+  "scripts": {
+    "install:all": "npm ci --prefix master && npm ci --prefix workers",
+    "start:master": "npm start --prefix master",
+    "start:worker": "npm start --prefix workers",
+    "test": "npm test --prefix master && npm test --prefix workers"
+  }
+}

@@ -164,7 +164,7 @@
       startBtn.disabled = true;
       startBtn.textContent = "⏳ Cracking en cours...";
 
-      await fetch("http://localhost:3000/start", {
+      await fetch("/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hash, charset, maxLength: maxLengthInput })
@@ -175,7 +175,7 @@
 
     async function poll() {
       try {
-        const res = await fetch("http://localhost:3000/status");
+        const res = await fetch("/status");
         const data = await res.json();
 
         statusEl.textContent = renderStatus(data);

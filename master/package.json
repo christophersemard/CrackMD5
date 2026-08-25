@@ -1,16 +1,22 @@
 {
-  "name": "master",
+  "name": "distributed-md5-master",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Serveur maître du laboratoire de calcul distribué.",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "test": "node --test"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "distributed-computing",
+    "postgresql",
+    "md5"
+  ],
+  "author": "Christopher Semard",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
+    "distributed-md5-lab": "file:..",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "pg": "^8.16.3"

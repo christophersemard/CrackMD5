@@ -1,6 +1,15 @@
 {
+  "name": "distributed-md5-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Worker du laboratoire de calcul distribué.",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js",
+    "test": "node --test"
+  },
   "dependencies": {
     "axios": "^1.13.2",
-    "crypto": "^1.0.1"
+    "distributed-md5-lab": "file:.."
   }
 }

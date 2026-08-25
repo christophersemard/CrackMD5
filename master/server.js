@@ -1,8 +1,9 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const pool = require("./db");
 const initDb = require("./initDb");
-const { startSession } = require("./chunkManager");
+const { startSession, computeTotalCombinations } = require("./chunkManager");
 
 // COLORS
 const C = {
@@ -25,6 +26,7 @@ function log(color, prefix, msg) {
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(express.static(path.resolve(__dirname, "../front")));
 
 log(C.green, "[MASTER]", "🚀 Serveur lancé, en attente de requêtes...");
 
@@ -89,10 +91,17 @@ app.post("/start", async (req, res) => {
             .json({ error: "Le charset ne peut pas être vide." });
     }
 
-    if (!Number.isInteger(parsedMaxLength) || parsedMaxLength <= 0) {
+    if (!Number.isInteger(parsedMaxLength) || parsedMaxLength <= 0 || parsedMaxLength > 8) {
         return res
             .status(400)
-            .json({ error: "maxLength doit être un entier positif." });
+            .json({ error: "maxLength doit être un entier compris entre 1 et 8." });
+    }
+
+    const totalCombinations = computeTotalCombinations(charset, parsedMaxLength);
+    if (!Number.isSafeInteger(totalCombinations) || totalCombinations > 2_000_000_000) {
+        return res.status(400).json({
+            error: "Espace de recherche trop grand (maximum : 2 milliards).",
+        });
     }
 
     const sessionId = await startSession(hash, charset, parsedMaxLength);
@@ -125,9 +134,22 @@ app.get("/next-chunk", async (req, res) => {
         return res.json({ done: true, reason: "no-active-session" });
     }
 
+    if (!workerId || typeof workerId !== "string") {
+        return res.status(400).json({ error: "workerId manquant." });
+    }
+
     const pending = await pool.query(
-        `SELECT * FROM chunks WHERE sessionId=$1 AND status='pending' ORDER BY id ASC LIMIT 1`,
-        [session.id]
+        `UPDATE chunks
+         SET status='in_progress', workerId=$2, updatedAt=NOW()
+         WHERE id = (
+             SELECT id FROM chunks
+             WHERE sessionId=$1 AND status='pending'
+             ORDER BY id ASC
+             FOR UPDATE SKIP LOCKED
+             LIMIT 1
+         )
+         RETURNING *`,
+        [session.id, workerId]
     );
 
     if (pending.rows.length === 0) {
@@ -140,15 +162,6 @@ app.get("/next-chunk", async (req, res) => {
         C.blue,
         "[MASTER]",
         `📦 Attribution chunk ${chunk.id} → worker ${workerId}`
-    );
-
-    await pool.query(
-        `UPDATE chunks
-     SET status='in_progress',
-         workerId=$1,
-         updatedAt=NOW()
-     WHERE id=$2`,
-        [workerId, chunk.id]
     );
 
     log(C.gray, " └─", `Chunk ${chunk.id} passé à in_progress`);
@@ -227,11 +240,12 @@ app.post("/report", async (req, res) => {
 async function bootstrap() {
     await initDb();
 
-    app.listen(3000, () =>
+    const port = Number(process.env.MASTER_PORT || 3000);
+    app.listen(port, () =>
         log(
             C.bold + C.green,
             "[MASTER]",
-            "🟩 Serveur master actif sur port 3000 !"
+            `🟩 Serveur master actif sur le port ${port} !`
         )
     );
 }
