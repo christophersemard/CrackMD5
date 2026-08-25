@@ -71,7 +71,7 @@ Les tests couvrent la conversion d'un index en chaîne et le calcul du nombre de
 - Le projet illustre une file de travail distribuée, pas une solution moderne de récupération de mots de passe.
 - Un fichier `.env` a existé dans les premiers commits ; les valeurs correspondaient à une configuration PostgreSQL locale et ne sont plus présentes dans la branche actuelle.
 
-> Documentation de projet revue en août 2026.
+> Projet mis en avant dans la vitrine GitHub ; documentation revue en août 2026.
 
 ## Auteur
 
